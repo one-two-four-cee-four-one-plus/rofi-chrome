@@ -1,0 +1,9 @@
+{
+    "name": "com.my_extension.my_native_host",
+    "description": "My Native Host",
+    "path": "/home/melvin/.local/rofi-chrome/host/server.py",
+    "type": "stdio",
+    "allowed_origins": [
+        "chrome-extension://pdgdfmmkkonphbfjnkkkajmaeelmdppm/"
+    ]
+}
