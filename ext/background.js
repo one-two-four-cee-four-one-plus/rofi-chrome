@@ -4,6 +4,18 @@ function dump_tab(tab) {
     return {title: tab.title, id: tab.id, url: tab.url}
 }
 
+function isValidHttpUrl(string) {
+    let url;
+
+    try {
+        url = new URL(string);
+    } catch (_) {
+        return false;
+    }
+
+  return url.protocol === "http:" || url.protocol === "https:";
+}
+
 function ping() {
     setTimeout(_ => {
         port.postMessage({ type: 'ping' });
@@ -25,7 +37,11 @@ port.onMessage.addListener((response) => {
     } else if (response.type == 'switch') {
         chrome.tabs.update(response.data, {active: true});
     } else if (response.type == 'open') {
-        chrome.tabs.create({url: `https://duckduckgo.com/?q=${encodeURIComponent(response.data)}`});
+        if (isValidHttpUrl(response.data)) {
+            chrome.tabs.create({url: response.data});
+        } else {
+            chrome.tabs.create({url: `https://duckduckgo.com/?q=${encodeURIComponent(response.data)}`});
+        }
     } else if (response.type == 'goto') {
         chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
             let currTab = tabs[0];
