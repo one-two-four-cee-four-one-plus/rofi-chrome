@@ -19,6 +19,16 @@ port.onMessage.addListener((response) => {
         chrome.tabs.update(response.data, {active: true});
     } else if (response.type == 'open') {
         chrome.tabs.create({url: `https://duckduckgo.com/?q=${encodeURIComponent(response.data)}`});
+    } else if (response.type == 'goto') {
+        chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
+            let currTab = tabs[0];
+            if (currTab) {
+                chrome.tabs.update(
+                    currTab.id,
+                    {url: `https://duckduckgo.com/?q=${encodeURIComponent(response.data)}`}
+                );
+            }
+        });
     } else if (response.type == 'tabs') {
         chrome.tabs.query({}, function(tabs) {
             port.postMessage({type: 'tabs', data: tabs.map(dump_tab)});

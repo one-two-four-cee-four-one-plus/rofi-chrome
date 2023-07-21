@@ -98,7 +98,8 @@ async def handle_command(reader: asyncio.StreamReader, writer: asyncio.StreamWri
 
         try:
             if request.command == 'POST':
-                await send_to_browser({'type': 'open', 'data': query['url'][0]})
+                type_ = 'goto' if 'goto' in query else 'open'
+                await send_to_browser({'type': type_, 'data': query['url'][0]})
 
             elif request.command == 'GET':
                 tabs = await get_tabs()
