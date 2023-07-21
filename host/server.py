@@ -10,6 +10,7 @@ from io import BytesIO
 
 
 tabs_future = None
+current_tab_future = None
 browser = None
 
 
@@ -26,6 +27,16 @@ async def get_tabs():
     tabs = await tabs_future
     tabs_future = None
     return tabs
+
+
+async def get_current_tab():
+    global current_tab_future
+    if current_tab_future is None or current_tab_future.done():
+        current_tab_future = asyncio.Future()
+    await send_to_browser({'type': 'current'})
+    tab = await current_tab_future
+    current_tab_future = None
+    return tab
 
 
 async def send_message(writer, message):
@@ -68,6 +79,9 @@ async def handle_extension(reader, writer):
     elif message_type == 'tabs':
         if tabs_future and not tabs_future.done():
             tabs_future.set_result(message['data'])
+    elif message_type == 'current':
+        if current_tab_future and not current_tab_future.done():
+            current_tab_future.set_result(message['data'])
 
 
 class HTTPRequest(BaseHTTPRequestHandler):
@@ -102,8 +116,12 @@ async def handle_command(reader: asyncio.StreamReader, writer: asyncio.StreamWri
                 await send_to_browser({'type': type_, 'data': query['url'][0]})
 
             elif request.command == 'GET':
-                tabs = await get_tabs()
-                response = '\n'.join((f'{i + 1}: {format_tab(tab)}' for i, tab in enumerate(tabs)))
+                if 'url' in query:
+                    tab = await get_current_tab()
+                    response = tab['url']
+                else:
+                    tabs = await get_tabs()
+                    response = '\n'.join((f'{i + 1}: {format_tab(tab)}' for i, tab in enumerate(tabs)))
 
             elif request.command == 'DELETE':
                 tabs = await get_tabs()
@@ -113,6 +131,8 @@ async def handle_command(reader: asyncio.StreamReader, writer: asyncio.StreamWri
                     await asyncio.gather(*(
                         send_to_browser({'type': 'close', 'data': tab['id']}) for tab in to_delete
                     ))
+                elif 'current' in query:
+                    await send_to_browser({'type': 'close_current'})
                 else:
                     index = int(query['index'][0]) - 1
                     to_delete = tabs[index]

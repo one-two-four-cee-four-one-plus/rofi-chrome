@@ -15,6 +15,13 @@ port.onMessage.addListener((response) => {
     console.log(JSON.stringify(response));
     if (response.type == 'close') {
         chrome.tabs.remove(response.data);
+    } else if (response.type == 'close_current') {
+        chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
+            let currTab = tabs[0];
+            if (currTab) {
+                chrome.tabs.remove(currTab.id);
+            }
+        });
     } else if (response.type == 'switch') {
         chrome.tabs.update(response.data, {active: true});
     } else if (response.type == 'open') {
@@ -32,6 +39,13 @@ port.onMessage.addListener((response) => {
     } else if (response.type == 'tabs') {
         chrome.tabs.query({}, function(tabs) {
             port.postMessage({type: 'tabs', data: tabs.map(dump_tab)});
+        });
+    } else if (response.type == 'current') {
+        chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
+            let currTab = tabs[0];
+            if (currTab) {
+                port.postMessage({type: 'current', data: dump_tab(currTab)});
+            }
         });
     }
 });
